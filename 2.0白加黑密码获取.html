@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>晚上9点扑克牌</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+            color: #fff;
+            overflow: hidden;
+        }
+        
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            max-width: 800px;
+            width: 90%;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 30px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .cards-container {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 25px;
+            margin: 40px 0;
+        }
+        
+        .card {
+            width: 160px;
+            height: 240px;
+            background: white;
+            border-radius: 15px;
+            position: relative;
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+            display: flex;
+            flex-direction: column;
+            padding: 10px;
+            transition: transform 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-10px) scale(1.05);
+            box-shadow: 0 15px 25px rgba(0, 0, 0, 0.3);
+        }
+        
+        .card.red {
+            color: #e53935;
+        }
+        
+        .card.black {
+            color: #2c3e50;
+        }
+        
+        .top-left, .bottom-right {
+            position: absolute;
+            padding: 5px;
+            font-weight: bold;
+            font-size: 1.4rem;
+        }
+        
+        .top-left {
+            top: 5px;
+            left: 10px;
+        }
+        
+        .bottom-right {
+            bottom: 5px;
+            right: 10px;
+            transform: rotate(180deg);
+        }
+        
+        .middle-center {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            font-size: 5rem;
+        }
+        
+        .datetime {
+            font-size: 1.5rem;
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            display: inline-block;
+        }
+        
+        .message {
+            font-size: 1.2rem;
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 10px;
+            background: rgba(0, 0, 0, 0.2);
+        }
+        
+        @media (max-width: 600px) {
+            .cards-container {
+                gap: 15px;
+            }
+            
+            .card {
+                width: 130px;
+                height: 195px;
+            }
+            
+            .middle-center {
+                font-size: 4rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>捷途东北大区</h1>
+        <h1>白加黑-打卡密码</h1>
+        
+        <div class="message" id="message">请稍候，晚上9点后显示</div>
+        
+        <div class="cards-container" id="cardsContainer">
+            <!-- 扑克牌将动态生成 -->
+        </div>
+        
+        <div class="datetime" id="datetime"></div>
+    </div>
+
+    <script>
+        // 扑克牌花色和数值
+        const suits = ['♥', '♦', '♠', '♣'];
+        const values = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+        
+        // 检查当前时间是否在晚上9点后
+        function isAfter9PM() {
+            const now = new Date();
+            return now.getHours() >= 21;
+        }
+        
+        // 获取当天日期作为随机种子
+        function getTodaySeed() {
+            const today = new Date();
+            return `${today.getFullYear()}-${today.getMonth()}-${today.getDate()}`;
+        }
+        
+        // 基于种子的随机数生成器
+        function seededRandom(seed) {
+            let hash = 0;
+            for (let i = 0; i < seed.length; i++) {
+                const char = seed.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash;
+            }
+            return (hash % 10000) / 10000;
+        }
+        
+        // 生成当天固定的三张牌
+        function getDailyCards() {
+            const seed = getTodaySeed();
+            const allCards = [];
+            
+            // 生成所有可能的牌
+            for (const suit of suits) {
+                for (const value of values) {
+                    allCards.push({ suit, value });
+                }
+            }
+            
+            // 基于种子洗牌
+            for (let i = allCards.length - 1; i > 0; i--) {
+                const j = Math.floor(seededRandom(seed + i) * (i + 1));
+                [allCards[i], allCards[j]] = [allCards[j], allCards[i]];
+            }
+            
+            // 返回前三张作为当天固定牌
+            return allCards.slice(0, 3);
+        }
+        
+        // 显示扑克牌
+        function displayCards() {
+            const container = document.getElementById('cardsContainer');
+            const message = document.getElementById('message');
+            container.innerHTML = '';
+            
+            const dailyCards = getDailyCards();
+            
+            dailyCards.forEach(card => {
+                const cardElement = document.createElement('div');
+                cardElement.className = `card ${card.suit === '♥' || card.suit === '♦' ? 'red' : 'black'}`;
+                
+                cardElement.innerHTML = `
+                    <div class="top-left">
+                        <div>${card.value}</div>
+                        <div>${card.suit}</div>
+                    </div>
+                    <div class="middle-center">
+                        ${card.suit}
+                    </div>
+                    <div class="bottom-right">
+                        <div>${card.value}</div>
+                        <div>${card.suit}</div>
+                    </div>
+                `;
+                
+                container.appendChild(cardElement);
+            });
+            
+            message.textContent = "今日扑克牌已展示";
+        }
+        
+        // 更新日期时间显示
+        function updateDateTime() {
+            const now = new Date();
+            const dateTimeElement = document.getElementById('datetime');
+            
+            // 格式化为中文日期时间
+            const options = { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            };
+            
+            dateTimeElement.textContent = now.toLocaleString('zh-CN', options);
+        }
+        
+        // 主更新函数
+        function updateDisplay() {
+            updateDateTime();
+            
+            if (isAfter9PM()) {
+                displayCards();
+            } else {
+                // 计算距离晚上9点的时间
+                const now = new Date();
+                const eveningTime = new Date();
+                eveningTime.setHours(21, 0, 0, 0);
+                
+                const diff = eveningTime - now;
+                if (diff > 0) {
+                    const hours = Math.floor(diff / (1000 * 60 * 60));
+                    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+                    
+                    document.getElementById('message').textContent = 
+                        `将于晚上9点显示扑克牌，还有${hours}小时${minutes}分${seconds}秒`;
+                }
+            }
+        }
+        
+        // 初始化页面
+        function initPage() {
+            // 首次更新显示
+            updateDisplay();
+            
+            // 每秒更新一次时间
+            setInterval(updateDisplay, 1000);
+        }
+        
+        // 页面加载完成后初始化
+        window.addEventListener('DOMContentLoaded', initPage);
+    </script>
+</body>
+</html>
